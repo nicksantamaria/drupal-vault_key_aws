@@ -7,7 +7,7 @@ jobs:
       - image: nicksantamaria/drupal_contrib_builder:latest
     working_directory: /data
     environment:
-      GIT_MIRROR_URL: nickurbits@git.drupal.org:project/PROJECT_NAME.git
+      GIT_MIRROR_URL: nickurbits@git.drupal.org:project/vault_key_aws.git
     steps:
       - checkout
       - run:
@@ -16,7 +16,7 @@ jobs:
       - run:
           name: Push to drupal.org git remote
           command: git push drupal "${CIRCLE_BRANCH:-refs/tags/${CIRCLE_TAG}}"
-          
+
   # Job performs code style / validation tasks.
   lint:
     docker:
@@ -69,11 +69,11 @@ jobs:
           name: Fetch drupal dependencies
           command: composer install --prefer-dist --no-progress
       - checkout:
-          path: /data/app/modules/PROJECT_NAME
+          path: /data/app/modules/vault_key_aws
       - run:
-          name: Fetch PROJECT_NAME dependencies
+          name: Fetch vault_key_aws dependencies
           command: |
-            cat modules/PROJECT_NAME/composer.json \
+            cat modules/vault_key_aws/composer.json \
               | jq '.require | keys[] as $k | "\($k)=\(.[$k])@dev"' \
               | xargs composer require --no-progress
       - run:
@@ -82,7 +82,7 @@ jobs:
             mkdir -p sites/default/files/tmp sites/default/private
             chmod -R 777 sites/default/files sites/default/private
             drush -yv site-install minimal --db-url="${SIMPLETEST_DB}"
-            drush -yv en PROJECT_NAME simpletest
+            drush -yv en vault_key_aws simpletest
       - run: service apache2 restart
       - run:
           name: Run unit tests
@@ -91,7 +91,7 @@ jobs:
               --concurrency 4 \
               --url "${SIMPLETEST_BASE_URL}" \
               --dburl "${SIMPLETEST_DB}" \
-              "PROJECT_NAME"
+              "vault_key_aws"
   test_84x:
     <<: *test
     environment:
