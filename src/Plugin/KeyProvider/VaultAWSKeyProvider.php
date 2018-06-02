@@ -105,35 +105,34 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
     ];
   }
 
+  protected static function leaseStorageKey(KeyInterface $key) {
+    return sprintf("key:%s", $key->id());
+  }
+
   /**
    * {@inheritdoc}
    */
   public function getKeyValue(KeyInterface $key) {
-    $state_key = $this->getStateKey($key);
-    $lease = \Drupal::state()->get($state_key);
-    if (!empty($lease)) {
-      if ($lease['lease_expiry'] >= \Drupal::time()->getRequestTime()) {
-        return $lease['data'];
-      }
+    // Check if there is a valid lease available.
+    $lease_data = $this->client->retrieveLease(self::leaseStorageKey($key));
+    if (!empty($lease_data)) {
+      return $lease_data;
     }
 
-    // @todo attempt to renew lease
-    // @todo read new credentials when lease expires
+    $this->logger("no valid lease - reading new credentials for " . $key->id());
     $path = $this->buildRequestPath("get", $key);
     try {
       $response = $this->client->read($path);
+      $data = Json::encode($response->getData());
+      $this->client->storeLease(
+        self::leaseStorageKey($key),
+        $response->getLeaseId(),
+        $data,
+        $response->getLeaseDuration()
+      );
 
-      $lease = [
-        // JSON encode the value as the multi-key key type expects this data type.
-        'data' => Json::encode($response->getData()),
-        'lease_id' => $response->getLeaseId(),
-        'lease_duration' => $response->getLeaseDuration(),
-      ];
-      $lease['lease_expiry'] = \Drupal::time()->getRequestTime() + (int) $lease['lease_duration'];
-      \Drupal::state()->set($state_key, $lease);
-
-      return $lease['data'];
-    } catch (Exception $e) {
+      return $data;
+    } catch (\Exception $e) {
       $this->logger->critical('Unable to fetch secret ' . $key->id());
       return '';
     }
@@ -151,7 +150,7 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
    */
   public function deleteKeyValue(KeyInterface $key) {
     // Revoke the lease.
-    $state_key = $this->getStateKey($key);
+    //$state_key = $this->getStateKey($key);
     $lease = \Drupal::state()->get($state_key);
     if (!empty($lease)) {
       try {
@@ -274,14 +273,6 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
     }
 
     return (string) $url;
-  }
-
-  /**
-   *
-   */
-  protected function getStateKey(KeyInterface $key) {
-    $state_key = sprintf('vault_key_aws.%s', $key->id());
-    return $state_key;
   }
 
 }
