@@ -39,7 +39,7 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
   /**
    * The Vault client.
    *
-   * @var VaultClient
+   * @var \Drupal\vault\VaultClient
    */
   protected $client;
 
@@ -102,10 +102,11 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
   /**
    * Returns the lease storage key for this provider.
    *
-   * @param KeyInterface $key
-   *  The key entity.
+   * @param \Drupal\key\KeyInterface $key
+   *   The key entity.
    *
    * @return string
+   *   The storage key.
    */
   protected static function leaseStorageKey(KeyInterface $key) {
     return sprintf("key:%s", $key->id());
@@ -239,12 +240,12 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
    * Builds the URL endpoint.
    *
    * @param string $action
-   *  The action being performed.
-   * @param KeyInterface $key
-   *  The key entity.
+   *   The action being performed.
+   * @param \Drupal\key\KeyInterface $key
+   *   The key entity.
    *
    * @return string
-   *  Request path for desired vault endpoint.
+   *   Request path for desired vault endpoint.
    */
   protected function buildRequestPath(string $action, KeyInterface $key) {
     $provider_config = $this->getConfiguration();
