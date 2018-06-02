@@ -1,19 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\vault\Plugin\KeyProvider\VaultKeyValueKeyProvider.
- */
-
 namespace Drupal\vault_key_aws\Plugin\KeyProvider;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Component\Serialization\Json;
 use Drupal\vault\VaultClient;
-
 use Symfony\Component\DependencyInjection\ContainerInterface;
-
+use Psr\Log\LoggerInterface;
 use Drupal\key\KeyInterface;
 use Drupal\key\Plugin\KeyPluginFormInterface;
 use Drupal\key\Plugin\KeyProviderBase;
@@ -70,7 +64,7 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
   /**
    * Sets client property.
    *
-   * @param VaultClient $client
+   * @param \Drupal\vault\VaultClient $client
    *   The secrets manager client.
    *
    * @return self
@@ -90,7 +84,7 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
    * @return self
    *   Current object.
    */
-  public function setLogger(\Psr\Log\LoggerInterface $logger) {
+  public function setLogger(LoggerInterface $logger) {
     $this->logger = $logger;
     return $this;
   }
@@ -105,6 +99,14 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
     ];
   }
 
+  /**
+   * Returns the lease storage key for this provider.
+   *
+   * @param KeyInterface $key
+   *  The key entity.
+   *
+   * @return string
+   */
   protected static function leaseStorageKey(KeyInterface $key) {
     return sprintf("key:%s", $key->id());
   }
@@ -119,7 +121,7 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
       return $lease_data;
     }
 
-    $this->logger("no valid lease - reading new credentials for " . $key->id());
+    $this->logger->debug("no valid lease - reading new credentials for " . $key->id());
     $path = $this->buildRequestPath("get", $key);
     try {
       $response = $this->client->read($path);
@@ -132,7 +134,8 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
       );
 
       return $data;
-    } catch (\Exception $e) {
+    }
+    catch (\Exception $e) {
       $this->logger->critical('Unable to fetch secret ' . $key->id());
       return '';
     }
@@ -142,7 +145,7 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
    * {@inheritdoc}
    */
   public function setKeyValue(KeyInterface $key, $key_value) {
-    // There's nothing to do here - we only support reading existing aws credentials.
+    // There's nothing to do here - we only support reading aws credentials.
   }
 
   /**
@@ -150,20 +153,7 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
    */
   public function deleteKeyValue(KeyInterface $key) {
     // Revoke the lease.
-    //$state_key = $this->getStateKey($key);
-    $lease = \Drupal::state()->get($state_key);
-    if (!empty($lease)) {
-      try {
-        // @todo for some reason these tokens aren't being revoked. Get to the bottom of it.
-        $path = '/sys/leases/revoke';
-        $response = $this->client->put($path, ["lease_id" => $lease['lease_id']]);
-      } catch (Exception $e) {
-        $this->logger->critical('Unable to revoke lease on secret ' . $key->id());
-      }
-    }
-
-    // Remove the lease from state API.
-    \Drupal::state()->delete($state_key);
+    // @todo replace this with lease management provided by vault module.
   }
 
   /**
@@ -249,11 +239,14 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
    * Builds the URL endpoint.
    *
    * @param string $action
+   *  The action being performed.
    * @param KeyInterface $key
-   * @param string $lease_id
+   *  The key entity.
+   *
    * @return string
+   *  Request path for desired vault endpoint.
    */
-  protected function buildRequestPath(string $action, KeyInterface $key, $lease_id = NULL) {
+  protected function buildRequestPath(string $action, KeyInterface $key) {
     $provider_config = $this->getConfiguration();
 
     switch ($action) {
@@ -263,16 +256,12 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
           ':endpoint' => 'creds',
           ':secret_path' => $provider_config['secret_path'],
         ]);
-        break;
+        return (string) $url;
 
-      case 'revoke':
-        $url = new FormattableMarkup("/sys/leases/revoke/:lease_id", [
-          ':lease_id' => $lease_id,
-        ]);
-        break;
+      default:
+        return '';
     }
 
-    return (string) $url;
   }
 
 }
