@@ -41,10 +41,7 @@ jobs:
       - run:
           name: Test drupal.org packager excludes
           command: bash ./tests/package-excludes/run-test.sh $(pwd)
-      - run:
-          name: Ensure terraform code is valid
-          command: tflint
-          working_directory: /data/infracode/terraform
+
   # Job template for running Drupal test suite against specified Drupal version.
   test: &test
     docker:
