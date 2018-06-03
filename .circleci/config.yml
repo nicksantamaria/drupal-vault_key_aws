@@ -107,9 +107,9 @@ workflows:
   main:
     jobs:
       - lint
-      - test_84x
-      - test_85x
-      - test_86x
+#      - test_84x
+#      - test_85x
+#      - test_86x
   sync:
     jobs:
       - sync_drupalorg:
