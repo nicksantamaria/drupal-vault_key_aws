@@ -154,7 +154,8 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
    */
   public function deleteKeyValue(KeyInterface $key) {
     // Revoke the lease.
-    // @todo replace this with lease management provided by vault module.
+    $this->logger->debug("key entity deletion triggered revocation of aws credential lease");
+    $this->client->revokeLease(self::leaseStorageKey($key));
   }
 
   /**
