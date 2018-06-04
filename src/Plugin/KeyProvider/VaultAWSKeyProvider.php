@@ -198,7 +198,6 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
       '#field_prefix' => sprintf('%s/%s/', $vault_config->get('base_url'), $client::API),
       '#required' => TRUE,
       '#default_value' => $provider_config['secret_engine_mount'],
-      '#disabled' => !$new,
       '#options' => [],
     ];
 
@@ -211,7 +210,6 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
       '#title' => $this->t('Secret Path'),
       '#description' => $this->t('The path prefix where the secret is stored.'),
       '#default_value' => $provider_config['secret_path'],
-      '#disabled' => !$new,
     ];
 
     return $form;
