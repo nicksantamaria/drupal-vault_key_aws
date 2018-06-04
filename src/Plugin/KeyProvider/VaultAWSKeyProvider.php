@@ -207,8 +207,8 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
 
     $form['secret_path'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Secret Path'),
-      '#description' => $this->t('The path prefix where the secret is stored.'),
+      '#title' => $this->t('Role Path'),
+      '#description' => $this->t('The vault role path.'),
       '#default_value' => $provider_config['secret_path'],
     ];
 
