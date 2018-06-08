@@ -192,17 +192,27 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
     $new = empty($form_state->getStorage()['key_value']['current']);
 
     $form['secret_engine_mount'] = [
-      '#type' => 'select',
+      '#type' => 'textfield',
       '#title' => $this->t('Secret Engine Mount'),
       '#description' => $this->t('The Key/Value secret engine mount point.'),
       '#field_prefix' => sprintf('%s/%s/', $vault_config->get('base_url'), $client::API),
-      '#required' => TRUE,
       '#default_value' => $provider_config['secret_engine_mount'],
-      '#options' => [],
+      '#disabled' => !$new,
     ];
 
-    foreach ($client->listSecretEngineMounts(['aws']) as $mount => $info) {
-      $form['secret_engine_mount']['#options'][$mount] = $mount;
+    try {
+      // Attempt to provide better UX by listing the available mounts. If this
+      // fails it will fall back to the standard textfied input.
+      $mount_points = $client->listSecretEngineMounts(['aws']);
+
+      $form['secret_engine_mount']['#type'] = 'select';
+      $form['secret_engine_mount']['#options'] = [];
+      foreach ($mount_points as $mount => $info) {
+        $form['secret_engine_mount']['#options'][$mount] = $mount;
+      }
+    }
+    catch (\Exception $e) {
+      $this->logger->error("Unable to list mount points for key/value secret engine");
     }
 
     $form['secret_path'] = [
