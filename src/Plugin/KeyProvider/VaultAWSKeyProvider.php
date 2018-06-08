@@ -191,7 +191,6 @@ class VaultAWSKeyProvider extends KeyProviderBase implements KeyProviderSettable
     $provider_config = $this->getConfiguration();
     $new = empty($form_state->getStorage()['key_value']['current']);
 
-    ##
     $form['secret_engine_mount'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Secret Engine Mount'),
