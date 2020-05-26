@@ -7,3 +7,4 @@ package: Security
 dependencies:
   - key:key
   - vault:vault
+core_version_requirement: ^8 || ^9
